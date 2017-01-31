@@ -1,6 +1,6 @@
 # gimxserial
 
-The gimxhid library is a serial access library supporting asynchronous IO.  
+The gimxserial library is a serial access library supporting asynchronous IO.  
 It has a compilation dependency on gimxpoll headers, and on gimxcommon source code.  
 
 Compilation:
