@@ -9,9 +9,9 @@
 
 #include <gimxpoll/include/gpoll.h>
 
-typedef int (* GSERIAL_READ_CALLBACK)(int user, const void * buf, int status);
-typedef int (* GSERIAL_WRITE_CALLBACK)(int user, int status);
-typedef int (* GSERIAL_CLOSE_CALLBACK)(int user);
+typedef int (* GSERIAL_READ_CALLBACK)(void * user, const void * buf, int status);
+typedef int (* GSERIAL_WRITE_CALLBACK)(void * user, int status);
+typedef int (* GSERIAL_CLOSE_CALLBACK)(void * user);
 #ifndef WIN32
 typedef GPOLL_REGISTER_FD GSERIAL_REGISTER_SOURCE;
 typedef GPOLL_REMOVE_FD GSERIAL_REMOVE_SOURCE;
@@ -32,15 +32,17 @@ typedef struct {
 extern "C" {
 #endif
 
+struct gserial_device;
+
 int gserial_init();
 int gserial_exit();
-int gserial_open(const char * portname, unsigned int baudrate);
-int gserial_close(int device);
-int gserial_read_timeout(int device, void * buf, unsigned int count, unsigned int timeout);
-int gserial_set_read_size(int device, unsigned int size);
-int gserial_register(int device, int user, const GSERIAL_CALLBACKS * callbacks);
-int gserial_write_timeout(int device, void * buf, unsigned int count, unsigned int timeout);
-int gserial_write(int device, const void * buf, unsigned int count);
+struct gserial_device * gserial_open(const char * portname, unsigned int baudrate);
+int gserial_close(struct gserial_device * device);
+int gserial_read_timeout(struct gserial_device * device, void * buf, unsigned int count, unsigned int timeout);
+int gserial_set_read_size(struct gserial_device * device, unsigned int size);
+int gserial_register(struct gserial_device * device, void * user, const GSERIAL_CALLBACKS * callbacks);
+int gserial_write_timeout(struct gserial_device * device, void * buf, unsigned int count, unsigned int timeout);
+int gserial_write(struct gserial_device * device, const void * buf, unsigned int count);
 
 #ifdef __cplusplus
 }

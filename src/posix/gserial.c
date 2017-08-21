@@ -26,9 +26,9 @@ int gserial_exit() {
 }
 
 
-static int tty_set_params(int device, speed_t baudrate)
+static int tty_set_params(struct gserial_device * device, speed_t baudrate)
 {
-  int fd = async_get_fd(device);
+  int fd = async_get_fd((struct async_device *) device);
   if (fd < 0) {
       return -1;
   }
@@ -53,9 +53,9 @@ static int tty_set_params(int device, speed_t baudrate)
   return 0;
 }
 
-static int spi_set_params(int device, unsigned int baudrate)
+static int spi_set_params(struct gserial_device * device, unsigned int baudrate)
 {
-    int fd = async_get_fd(device);
+    int fd = async_get_fd((struct async_device *) device);
     if (fd < 0) {
         return -1;
     }
@@ -168,12 +168,12 @@ speed_t get_baudrate(unsigned int baudrate) {
  * \return the identifier of the opened device (to be used in further operations), \
  * or -1 in case of failure (e.g. no device found).
  */
-int gserial_open(const char * port, unsigned int baudrate) {
+struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
 
-  int device = async_open_path(port, 1);
+  struct gserial_device * device = (struct gserial_device *) async_open_path(port, 1);
   
-  if(device < 0) {
-    return -1;
+  if(device == NULL) {
+    return NULL;
   }
 
   int ret = 0;
@@ -197,8 +197,8 @@ int gserial_open(const char * port, unsigned int baudrate) {
   
   if(ret < 0)
   {
-    async_close(device);
-    return -1;
+    async_close((struct async_device *) device);
+    return NULL;
   }
 
   return device;
@@ -214,9 +214,9 @@ int gserial_open(const char * port, unsigned int baudrate) {
  *
  * \return the number of bytes actually read
  */
-int gserial_read_timeout(int device, void * buf, unsigned int count, unsigned int timeout) {
+int gserial_read_timeout(struct gserial_device * device, void * buf, unsigned int count, unsigned int timeout) {
 
-  return async_read_timeout(device, buf, count, timeout);
+  return async_read_timeout((struct async_device *) device, buf, count, timeout);
 }
 
 /*
@@ -227,9 +227,9 @@ int gserial_read_timeout(int device, void * buf, unsigned int count, unsigned in
  *
  * \return 0 in case of success, or -1 in case of error
  */
-int gserial_set_read_size(int device, unsigned int size) {
+int gserial_set_read_size(struct gserial_device * device, unsigned int size) {
 
-  return async_set_read_size(device, size);
+  return async_set_read_size((struct async_device *) device, size);
 }
 
 /*
@@ -243,7 +243,7 @@ int gserial_set_read_size(int device, unsigned int size) {
  *
  * \return 0 in case of success, or -1 in case of error
  */
-int gserial_register(int device, int user, const GSERIAL_CALLBACKS * callbacks) {
+int gserial_register(struct gserial_device * device, void * user, const GSERIAL_CALLBACKS * callbacks) {
 
     ASYNC_CALLBACKS async_callbacks = {
             .fp_read = callbacks->fp_read,
@@ -253,7 +253,7 @@ int gserial_register(int device, int user, const GSERIAL_CALLBACKS * callbacks) 
             .fp_remove = callbacks->fp_remove,
     };
 
-    return async_register(device, user, &async_callbacks);
+    return async_register((struct async_device *) device, user, &async_callbacks);
 }
 
 /*
@@ -266,9 +266,9 @@ int gserial_register(int device, int user, const GSERIAL_CALLBACKS * callbacks) 
  *
  * \return the number of bytes actually written (0 in case of timeout)
  */
-int gserial_write_timeout(int device, void * buf, unsigned int count, unsigned int timeout) {
+int gserial_write_timeout(struct gserial_device * device, void * buf, unsigned int count, unsigned int timeout) {
 
-    return async_write_timeout(device, buf, count, timeout);
+    return async_write_timeout((struct async_device *) device, buf, count, timeout);
 }
 
 /*
@@ -280,9 +280,9 @@ int gserial_write_timeout(int device, void * buf, unsigned int count, unsigned i
  *
  * \return -1 in case of error, 0 in case of pending write, or the number of bytes written
  */
-int gserial_write(int device, const void * buf, unsigned int count) {
+int gserial_write(struct gserial_device * device, const void * buf, unsigned int count) {
 
-    return async_write(device, buf, count);
+    return async_write((struct async_device *) device, buf, count);
 }
 
 /*
@@ -292,10 +292,10 @@ int gserial_write(int device, const void * buf, unsigned int count) {
  *
  * \return 0 in case of a success, -1 in case of an error
  */
-int gserial_close(int device) {
+int gserial_close(struct gserial_device * device) {
 
     usleep(10000);//sleep 10ms to leave enough time for the last packet to be sent
     
-    return async_close(device);
+    return async_close((struct async_device *) device);
 }
 

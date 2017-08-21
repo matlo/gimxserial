@@ -25,7 +25,7 @@
 
 static char * port = NULL;
 
-static int serial = -1;
+static struct gserial_device * serial = NULL;
 
 static unsigned char * packet;
 static unsigned char * result;
@@ -38,16 +38,23 @@ static unsigned short packet_size = 0;
 
 static unsigned int verbose = 0;
 
+static unsigned int duration = 0;
+static unsigned int allocated = 1024; // default allocation when duration is used
+
 static unsigned long long int t0, t1;
 static unsigned long long int * tRead = NULL;
 static unsigned long long int wread = 0;
 
+static char * port2 = NULL;
+static struct gserial_device * serial2 = NULL;
+static unsigned int read2 = 0;
+
 void results(unsigned long long int * tdiff, unsigned int cpt) {
-  unsigned int sum = 0;
-  unsigned int average;
-  unsigned int temp = 0;
-  unsigned int nbval;
-  unsigned int worst = 0;
+  unsigned long long int sum = 0;
+  unsigned long long int average;
+  unsigned long long int temp = 0;
+  unsigned long long int nbval;
+  unsigned long long int worst = 0;
 
   unsigned int i;
   for (i = 0; i < cpt && tdiff[i] > 0; i++) {
@@ -59,7 +66,7 @@ void results(unsigned long long int * tdiff, unsigned int cpt) {
 
   nbval = i;
 
-  printf("%d\t", worst);
+  printf("%llu\t", worst);
 
   if (nbval < 2) {
     return;
@@ -67,7 +74,7 @@ void results(unsigned long long int * tdiff, unsigned int cpt) {
 
   average = sum / nbval;
 
-  printf("%d\t", average);
+  printf("%llu\t", average);
 
   for (i = 0; i < nbval; i++) {
     temp = temp + pow(abs(tdiff[i] - average), 2);
@@ -75,11 +82,11 @@ void results(unsigned long long int * tdiff, unsigned int cpt) {
 
   temp = pow(temp / (nbval - 1), 0.5);
 
-  printf("%d\t", temp);
+  printf("%llu\t", temp);
 }
 
 static void usage() {
-  fprintf(stderr, "Usage: ./gserial_test [-p port] [-b baudrate] [-n samples] [-s packet size] -v\n");
+  fprintf(stderr, "Usage: ./gserial_test [-p port] [-b baudrate] [-d duration] [-n samples] [-s packet size] -v\n");
   exit(EXIT_FAILURE);
 }
 
@@ -89,16 +96,23 @@ static void usage() {
 static int read_args(int argc, char* argv[]) {
 
   int opt;
-  while ((opt = getopt(argc, argv, "b:n:p:s:v")) != -1) {
+  while ((opt = getopt(argc, argv, "b:d:n:p:s:v")) != -1) {
     switch (opt) {
     case 'b':
       baudrate = atoi(optarg);
+      break;
+    case 'd':
+      duration = atoi(optarg) * 1000000UL / PERIOD;
       break;
     case 'n':
       samples = atoi(optarg);
       break;
     case 'p':
-      port = optarg;
+      if (port == NULL) {
+        port = optarg;
+      } else if (port2 == NULL) {
+        port2 = optarg;
+      }
       break;
     case 's':
       packet_size = atoi(optarg);
@@ -114,7 +128,7 @@ static int read_args(int argc, char* argv[]) {
   return 0;
 }
 
-int serial_read(int user __attribute__((unused)), const void * buf, int status) {
+int serial_read(void * user __attribute__((unused)), const void * buf, int status) {
 
   if (status < 0) {
     set_done();
@@ -148,28 +162,43 @@ int serial_read(int user __attribute__((unused)), const void * buf, int status) 
       packet[i]++;
     }
 
-    tRead[count] = t1 - t0;
-
-    if (tRead[count] > wread) {
-      wread = tRead[count];
+    if (samples == 0 && count == allocated) {
+        void * ptr = realloc (tRead, 2 * allocated * sizeof(*tRead));
+        if (ptr == NULL) {
+            fprintf(stderr, "realloc failed\n");
+            set_done();
+            ret = -1;
+        } else {
+            allocated *= 2;
+            tRead = ptr;
+        }
     }
 
-    ++count;
-    if (count == samples) {
+    if (samples != 0 || count < allocated) {
 
-      set_done();
+        tRead[count] = t1 - t0;
 
-    } else {
+        if (tRead[count] > wread) {
+          wread = tRead[count];
+        }
 
-      t0 = get_time();
+        ++count;
+        if (count == samples) {
 
-      int status = gserial_write(serial, packet, packet_size);
-      if (status < 0) {
-        set_done();
-      }
+          set_done();
+
+        } else {
+
+          t0 = get_time();
+
+          int status = gserial_write(serial, packet, packet_size);
+          if (status < 0) {
+            set_done();
+          }
+        }
+
+        read = 0;
     }
-
-    read = 0;
   }
 
   if (is_done()) {
@@ -179,7 +208,38 @@ int serial_read(int user __attribute__((unused)), const void * buf, int status) 
   return ret;
 }
 
-int serial_close(int user __attribute__((unused))) {
+int serial_close(void * user __attribute__((unused))) {
+  set_done();
+  return 1;
+}
+
+int serial_read2(void * user __attribute__((unused)), const void * buf, int status) {
+
+  if (status < 0) {
+    set_done();
+    return 1;
+  }
+
+  read2 += status;
+
+  if (read2 < packet_size) {
+    gserial_set_read_size(serial2, packet_size - read2);
+  } else {
+    gserial_set_read_size(serial2, packet_size);
+  }
+
+  if (gserial_write(serial2, buf, status) < 0) {
+    set_done();
+  }
+
+  if (is_done()) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int serial_close2(void * user __attribute__((unused))) {
   set_done();
   return 1;
 }
@@ -190,7 +250,7 @@ int main(int argc, char* argv[]) {
 
   read_args(argc, argv);
 
-  if(port == NULL || baudrate == 0 || samples == 0 || packet_size == 0)
+  if(port == NULL || baudrate == 0 || (samples == 0 && duration == 0) || packet_size == 0)
   {
     usage();
     return -1;
@@ -199,7 +259,7 @@ int main(int argc, char* argv[]) {
   packet = calloc(packet_size, sizeof(*packet));
   result = calloc(packet_size, sizeof(*result));
 
-  tRead = calloc(samples, sizeof(*tRead));
+  tRead = calloc(samples ? samples : allocated, sizeof(*tRead));
 
   if(packet == NULL || result == NULL || tRead == NULL) {
     fprintf(stderr, "can't allocate memory to store samples\n");
@@ -217,7 +277,7 @@ int main(int argc, char* argv[]) {
           .fp_register = REGISTER_FUNCTION,
           .fp_remove = REMOVE_FUNCTION,
   };
-  int timer = gtimer_start(42, PERIOD, &timer_callbacks);
+  struct gtimer * timer = gtimer_start(NULL, PERIOD, &timer_callbacks);
   if (timer < 0) {
     set_done();
   }
@@ -225,7 +285,7 @@ int main(int argc, char* argv[]) {
   gserial_init();
 
   serial = gserial_open(port, baudrate);
-  if (serial < 0) {
+  if (serial == NULL) {
     return -1;
   }
 
@@ -238,24 +298,53 @@ int main(int argc, char* argv[]) {
           .fp_register = REGISTER_FUNCTION,
           .fp_remove = REMOVE_FUNCTION,
   };
-  gserial_register(serial, 42, &serial_callbacks);
+  gserial_register(serial, NULL, &serial_callbacks);
+
+  if (port2 != NULL) {
+
+    serial2 = gserial_open(port2, baudrate);
+    if (serial2 == NULL) {
+      set_done();
+    } else {
+      gserial_set_read_size(serial2, packet_size);
+
+      GSERIAL_CALLBACKS serial_callbacks2 = {
+            .fp_read = serial_read2,
+            .fp_write = NULL,
+            .fp_close = serial_close2,
+            .fp_register = REGISTER_FUNCTION,
+            .fp_remove = REMOVE_FUNCTION,
+      };
+      gserial_register(serial2, NULL, &serial_callbacks2);
+    }
+  }
 
   t0 = get_time();
-  
+
   int ret = gserial_write(serial, packet, packet_size);
   if (ret < 0) {
     set_done();
   }
 
+  unsigned int period_count = 0;
+
   while (!is_done()) {
     gpoll();
+    ++period_count;
+    if (duration > 0 && period_count >= duration) {
+      set_done();
+    }
   }
 
-  if (timer >= 0) {
+  if (timer != NULL) {
     gtimer_close(timer);
   }
 
   gserial_close(serial);
+
+  if (serial2 != NULL) {
+      gserial_close(serial2);
+  }
 
   gserial_exit();
 
@@ -267,6 +356,10 @@ int main(int argc, char* argv[]) {
   }
   results(tRead, count);
   printf("\n");
+
+  free(packet);
+  free(result);
+  free(tRead);
 
   return 0;
 }
