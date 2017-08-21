@@ -92,15 +92,15 @@ struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
     snprintf(scom, sizeof(scom), "\\\\.\\%s", port);
 
     struct gserial_device * device = (struct gserial_device *) async_open_path(scom, 1);
-    if (device < 0) {
-        return -1;
+    if (device == NULL) {
+        return NULL;
     }
 
     async_set_device_type((struct async_device *) device, E_ASYNC_DEVICE_TYPE_SERIAL);
 
     if (set_serial_params(device, baudrate) < 0) {
-        async_close(device);
-        return -1;
+        async_close((struct async_device *) device);
+        return NULL;
     }
 
     return device;
@@ -200,7 +200,7 @@ int gserial_close(struct gserial_device * device) {
 
     usleep(10000); //sleep 10ms to leave enough time for the last packet to be sent
 
-    HANDLE * handle = async_get_handle(device);
+    HANDLE * handle = async_get_handle((struct async_device *) device);
     s_serial_params * params = (s_serial_params *) async_get_private((struct async_device *) device);
 
     if (handle != NULL && params != NULL) {
@@ -214,5 +214,5 @@ int gserial_close(struct gserial_device * device) {
     
     free(params);
 
-    return async_close(device);
+    return async_close((struct async_device *) device);
 }
