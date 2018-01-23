@@ -6,6 +6,7 @@
 #include <gserial.h>
 #include <gimxcommon/include/gerror.h>
 #include <gimxcommon/include/async.h>
+#include <gimxlog/include/glog.h>
 
 #include <stdio.h>
 #include <linux/spi/spidev.h>
@@ -14,6 +15,8 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <unistd.h>
+
+GLOG_INST(GLOG_NAME)
 
 int gserial_init() {
 
@@ -186,7 +189,9 @@ struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
       ret = tty_set_params(device, speed);
     }
     else {
-      fprintf(stderr, "%s:%d %s: invalid baudrate (%u)\n", __FILE__, __LINE__, __func__, baudrate);
+      if (GLOG_LEVEL(GLOG_NAME,ERROR)) {
+        fprintf(stderr, "%s:%d %s: invalid baudrate (%u)\n", __FILE__, __LINE__, __func__, baudrate);
+      }
       ret = -1;
     }
   }

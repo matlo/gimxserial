@@ -6,9 +6,12 @@
 #include <gserial.h>
 #include <gimxcommon/include/gerror.h>
 #include <gimxcommon/include/async.h>
+#include <gimxlog/include/glog.h>
 
 #include <stdio.h>
 #include <unistd.h>
+
+GLOG_INST(GLOG_NAME)
 
 int gserial_init() {
 
