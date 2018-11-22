@@ -10,7 +10,7 @@ CXXFLAGS += -Wall -Wextra -O3
 #CFLAGS += -Wall -Wextra -O0 -g -fno-omit-frame-pointer
 #CXXFLAGS += -Wall -Wextra -O0 -g -fno-omit-frame-pointer
 
-NAME=$(shell basename $(shell pwd))
+NAME=$(shell basename "$(shell pwd)")
 
 LIBNAME=lib$(NAME)
 
