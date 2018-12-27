@@ -1,5 +1,5 @@
-CFLAGS += -O3
-CXXFLAGS += -O3
+CFLAGS += -Wall -Wextra -O3
+CXXFLAGS += -Wall -Wextra -O3
 
 CPPFLAGS = -I../..
 

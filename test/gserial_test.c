@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
           .fp_remove = REMOVE_FUNCTION,
   };
   struct gtimer * timer = gtimer_start(NULL, PERIOD, &timer_callbacks);
-  if (timer < 0) {
+  if (timer == NULL) {
     set_done();
   }
 
