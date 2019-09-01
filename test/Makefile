@@ -3,8 +3,8 @@ CXXFLAGS += -Wall -Wextra -O3
 
 CPPFLAGS = -I../..
 
-LDFLAGS = -L../../gimxserial -L../../gimxpoll -L../../gimxtimer -L../../gimxprio
-LDLIBS = -lgimxserial -lgimxpoll -lgimxtimer -lgimxprio
+LDFLAGS = -L../../gimxserial -L../../gimxpoll -L../../gimxlog -L../../gimxtime -L../../gimxtimer -L../../gimxprio
+LDLIBS = -lgimxserial -lgimxpoll -lgimxlog -lgimxtime -lgimxtimer -lgimxprio
 
 LDLIBS += -lm
 

@@ -9,13 +9,13 @@
 #include <string.h>
 #include <math.h>
 #include <getopt.h>
-#include <sys/time.h>
 
 #include <gimxserial/include/gserial.h>
 #include <gimxinput/include/ginput.h>
 #include <gimxpoll/include/gpoll.h>
 #include <gimxtimer/include/gtimer.h>
 #include <gimxprio/include/gprio.h>
+#include <gimxtime/include/gtime.h>
 
 #include <gimxcommon/test/common.h>
 #include <gimxcommon/test/handlers.c>
@@ -41,20 +41,20 @@ static unsigned int verbose = 0;
 static unsigned int duration = 0;
 static unsigned int allocated = 1024; // default allocation when duration is used
 
-static unsigned long long int t0, t1;
-static unsigned long long int * tRead = NULL;
-static unsigned long long int wread = 0;
+static gtime t0, t1;
+static gtime * tRead = NULL;
+static gtime wread = 0;
 
 static char * port2 = NULL;
 static struct gserial_device * serial2 = NULL;
 static unsigned int read2 = 0;
 
-void results(unsigned long long int * tdiff, unsigned int cpt) {
-  unsigned long long int sum = 0;
-  unsigned long long int average;
-  unsigned long long int temp = 0;
-  unsigned long long int nbval;
-  unsigned long long int worst = 0;
+void results(gtime * tdiff, unsigned int cpt) {
+  gtime sum = 0;
+  gtime average;
+  gtime temp = 0;
+  gtime nbval;
+  gtime worst = 0;
 
   unsigned int i;
   for (i = 0; i < cpt && tdiff[i] > 0; i++) {
@@ -143,7 +143,7 @@ int serial_read(void * user __attribute__((unused)), const void * buf, int statu
     return 0;
   }
 
-  t1 = get_time();
+  t1 = gtime_gettime();
 
   gserial_set_read_size(serial, packet_size);
 
@@ -189,7 +189,7 @@ int serial_read(void * user __attribute__((unused)), const void * buf, int statu
 
         } else {
 
-          t0 = get_time();
+          t0 = gtime_gettime();
 
           int status = gserial_write(serial, packet, packet_size);
           if (status < 0) {
@@ -319,7 +319,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  t0 = get_time();
+  t0 = gtime_gettime();
 
   int ret = gserial_write(serial, packet, packet_size);
   if (ret < 0) {
