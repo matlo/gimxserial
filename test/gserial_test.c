@@ -14,7 +14,6 @@
 #include <gimxinput/include/ginput.h>
 #include <gimxpoll/include/gpoll.h>
 #include <gimxtimer/include/gtimer.h>
-#include <gimxprio/include/gprio.h>
 #include <gimxtime/include/gtime.h>
 
 #include <gimxcommon/test/common.h>
@@ -263,10 +262,6 @@ int main(int argc, char* argv[]) {
 
   if(packet == NULL || result == NULL || tRead == NULL) {
     fprintf(stderr, "can't allocate memory to store samples\n");
-    return -1;
-  }
-
-  if (gprio() < 0) {
     return -1;
   }
 
