@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <windows.h>
 
 GLOG_INST(GLOG_NAME)
 
