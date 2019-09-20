@@ -40,7 +40,7 @@ static int tty_set_params(struct gserial_device * device, speed_t baudrate)
 
   if(tcgetattr(fd, &options) < 0)
   {
-    PRINT_ERROR_ERRNO("tcgetattr")
+    PRINT_ERROR_ERRNO("tcgetattr");
     return -1;
   }
   cfsetispeed(&options, baudrate);
@@ -48,7 +48,7 @@ static int tty_set_params(struct gserial_device * device, speed_t baudrate)
   cfmakeraw(&options);
   if(tcsetattr(fd, TCSANOW, &options) < 0)
   {
-    PRINT_ERROR_ERRNO("tcsetattr")
+    PRINT_ERROR_ERRNO("tcsetattr");
     return -1;
   }
   tcflush(fd, TCIFLUSH);
@@ -68,27 +68,27 @@ static int spi_set_params(struct gserial_device * device, unsigned int baudrate)
 
   if(ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &baudrate) < 0)
   {
-    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_MAX_SPEED_HZ")
+    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_MAX_SPEED_HZ");
     return -1;
   }
   else if(ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0)
   {
-    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_BITS_PER_WORD")
+    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_BITS_PER_WORD");
     return -1;
   }
   else if(ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits) < 0)
   {
-    PRINT_ERROR_ERRNO("ioctl SPI_IOC_RD_BITS_PER_WORD")
+    PRINT_ERROR_ERRNO("ioctl SPI_IOC_RD_BITS_PER_WORD");
     return -1;
   }
   else if (ioctl (fd, SPI_IOC_WR_MODE, &mode) < 0)
   {
-    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_MODE")
+    PRINT_ERROR_ERRNO("ioctl SPI_IOC_WR_MODE");
     return -1;
   }
   else if (ioctl (fd, SPI_IOC_RD_MODE, &mode) < 0)
   {
-    PRINT_ERROR_ERRNO("ioctl SPI_IOC_RD_MODE")
+    PRINT_ERROR_ERRNO("ioctl SPI_IOC_RD_MODE");
     return -1;
   }
 

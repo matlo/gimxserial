@@ -36,7 +36,7 @@ static int set_serial_params(struct gserial_device * device, unsigned int baudra
     s_serial_params * params = (s_serial_params *) calloc(1, sizeof(*params));
 
     if (params == NULL) {
-        PRINT_ERROR_ALLOC_FAILED("malloc")
+        PRINT_ERROR_ALLOC_FAILED("malloc");
         return -1;
     }
 
@@ -46,14 +46,14 @@ static int set_serial_params(struct gserial_device * device, unsigned int baudra
      * disable timeouts
      */
     if (GetCommTimeouts(handle, &params->prevTimeouts) == 0) {
-        PRINT_ERROR_GETLASTERROR("GetCommTimeouts")
+        PRINT_ERROR_GETLASTERROR("GetCommTimeouts");
         free(params);
         return -1;
     }
     params->restoreTimeouts = 1;
     COMMTIMEOUTS newTimeouts = { 0 };
     if (SetCommTimeouts(handle, &newTimeouts) == 0) {
-        PRINT_ERROR_GETLASTERROR("SetCommTimeouts")
+        PRINT_ERROR_GETLASTERROR("SetCommTimeouts");
         free(params);
         return -1;
     }
@@ -62,7 +62,7 @@ static int set_serial_params(struct gserial_device * device, unsigned int baudra
      */
     params->prevParams.DCBlength = sizeof(params->prevParams);
     if (GetCommState(handle, &params->prevParams) == 0) {
-        PRINT_ERROR_GETLASTERROR("GetCommState")
+        PRINT_ERROR_GETLASTERROR("GetCommState");
         free(params);
         return -1;
     }
@@ -73,7 +73,7 @@ static int set_serial_params(struct gserial_device * device, unsigned int baudra
     newSerialParams.StopBits = ONESTOPBIT;
     newSerialParams.Parity = NOPARITY;
     if (SetCommState(handle, &newSerialParams) == 0) {
-        PRINT_ERROR_GETLASTERROR("SetCommState")
+        PRINT_ERROR_GETLASTERROR("SetCommState");
         free(params);
         return -1;
     }
@@ -209,10 +209,10 @@ int gserial_close(struct gserial_device * device) {
 
     if (handle != NULL && params != NULL) {
         if (params->restoreParams && SetCommState(handle, &params->prevParams) == 0) {
-            PRINT_ERROR_GETLASTERROR("SetCommState")
+            PRINT_ERROR_GETLASTERROR("SetCommState");
         }
         if (params->restoreTimeouts && SetCommTimeouts(handle, &params->prevTimeouts) == 0) {
-            PRINT_ERROR_GETLASTERROR("SetCommTimeouts")
+            PRINT_ERROR_GETLASTERROR("SetCommTimeouts");
         }
     }
     
