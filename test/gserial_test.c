@@ -15,12 +15,17 @@
 #include <gimxpoll/include/gpoll.h>
 #include <gimxtimer/include/gtimer.h>
 #include <gimxtime/include/gtime.h>
+#include <gimxprio/include/gprio.h>
+#include <gimxlog/include/glog.h>
 
 #include <gimxcommon/test/common.h>
 #include <gimxcommon/test/handlers.c>
 #include <gimxcommon/test/timer.c>
 
 #define PERIOD 10000//microseconds
+
+static int debug = 0;
+static int prio = 0;
 
 static char * port = NULL;
 
@@ -65,7 +70,7 @@ void results(gtime * tdiff, unsigned int cpt) {
 
   nbval = i;
 
-  printf("%llu\t", worst);
+  printf("%I64u\t", worst);
 
   if (nbval < 2) {
     return;
@@ -73,19 +78,20 @@ void results(gtime * tdiff, unsigned int cpt) {
 
   average = sum / nbval;
 
-  printf("%llu\t", average);
+  printf("%I64u\t", average);
 
   for (i = 0; i < nbval; i++) {
-    temp = temp + pow(abs(tdiff[i] - average), 2);
+    gtimediff diff = tdiff[i] - average;
+    temp = temp + pow(llabs(diff), 2);
   }
 
   temp = pow(temp / (nbval - 1), 0.5);
 
-  printf("%llu\t", temp);
+  printf("%I64u\t", temp);
 }
 
 static void usage() {
-  fprintf(stderr, "Usage: ./gserial_test [-p port] [-b baudrate] [-d duration] [-n samples] [-s packet size] -v\n");
+  fprintf(stderr, "Usage: ./gserial_test [-p port] [-b baudrate] [-d duration] [-n samples] [-s packet size] -v -g\n");
   exit(EXIT_FAILURE);
 }
 
@@ -95,13 +101,19 @@ static void usage() {
 static int read_args(int argc, char* argv[]) {
 
   int opt;
-  while ((opt = getopt(argc, argv, "b:d:n:p:s:v")) != -1) {
+  while ((opt = getopt(argc, argv, "b:d:ghn:p:s:v")) != -1) {
     switch (opt) {
     case 'b':
       baudrate = atoi(optarg);
       break;
     case 'd':
       duration = atoi(optarg) * 1000000UL / PERIOD;
+      break;
+    case 'g':
+      debug = 1;
+      break;
+    case 'h':
+      prio = 1;
       break;
     case 'n':
       samples = atoi(optarg);
@@ -249,6 +261,10 @@ int main(int argc, char* argv[]) {
 
   read_args(argc, argv);
 
+  if (debug) {
+      glog_set_all_levels(E_GLOG_LEVEL_DEBUG);
+  }
+
   if(port == NULL || baudrate == 0 || (samples == 0 && duration == 0) || packet_size == 0)
   {
     usage();
@@ -263,6 +279,10 @@ int main(int argc, char* argv[]) {
   if(packet == NULL || result == NULL || tRead == NULL) {
     fprintf(stderr, "can't allocate memory to store samples\n");
     return -1;
+  }
+
+  if (prio && gprio_init() < 0) {
+    exit(-1);
   }
 
   // start a timer to periodically check the 'done' variable
@@ -333,6 +353,10 @@ int main(int argc, char* argv[]) {
 
   if (timer != NULL) {
     gtimer_close(timer);
+  }
+
+  if (prio) {
+    gprio_clean();
   }
 
   gserial_close(serial);
