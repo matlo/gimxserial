@@ -70,7 +70,7 @@ void results(gtime * tdiff, unsigned int cpt) {
 
   nbval = i;
 
-  printf("%I64u\t", worst);
+  printf("%I64u\t", GTIME_USEC(worst));
 
   if (nbval < 2) {
     return;
@@ -78,7 +78,7 @@ void results(gtime * tdiff, unsigned int cpt) {
 
   average = sum / nbval;
 
-  printf("%I64u\t", average);
+  printf("%I64u\t", GTIME_USEC(average));
 
   for (i = 0; i < nbval; i++) {
     gtimediff diff = tdiff[i] - average;
@@ -87,7 +87,7 @@ void results(gtime * tdiff, unsigned int cpt) {
 
   temp = pow(temp / (nbval - 1), 0.5);
 
-  printf("%I64u\t", temp);
+  printf("%I64u\t", GTIME_USEC(temp));
 }
 
 static void usage() {
