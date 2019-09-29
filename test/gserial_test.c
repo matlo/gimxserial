@@ -281,10 +281,6 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  if (prio && gprio_init() < 0) {
-    exit(-1);
-  }
-
   // start a timer to periodically check the 'done' variable
   GTIMER_CALLBACKS timer_callbacks = {
           .fp_read = timer_read,
@@ -341,6 +337,10 @@ int main(int argc, char* argv[]) {
     set_done();
   }
 
+  if (prio && gprio_init() < 0) {
+    set_done();
+  }
+
   unsigned int period_count = 0;
 
   while (!is_done()) {
@@ -351,12 +351,12 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (timer != NULL) {
-    gtimer_close(timer);
-  }
-
   if (prio) {
     gprio_clean();
+  }
+
+  if (timer != NULL) {
+    gtimer_close(timer);
   }
 
   gserial_close(serial);
