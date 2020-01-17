@@ -293,8 +293,6 @@ int main(int argc, char* argv[]) {
     set_done();
   }
 
-  gserial_init();
-
   serial = gserial_open(port, baudrate);
   if (serial == NULL) {
     return -1;
@@ -364,8 +362,6 @@ int main(int argc, char* argv[]) {
   if (serial2 != NULL) {
       gserial_close(serial2);
   }
-
-  gserial_exit();
 
   if(verbose) {
     printf("baudrate: %d ", baudrate);
