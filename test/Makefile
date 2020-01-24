@@ -21,7 +21,7 @@ LDLIBS += -lm
 
 ifeq ($(OS),Windows_NT)
 CPPFLAGS += `sdl2-config --cflags`
-LDLIBS += $(shell sdl2-config --libs) -lws2_32 -lpdcursesw -lintl
+LDLIBS += $(shell sdl2-config --libs) -lws2_32 -lintl
 LDLIBS:=$(filter-out -mwindows,$(LDLIBS))
 endif
 
