@@ -11,7 +11,6 @@
 #include <getopt.h>
 
 #include <gimxserial/include/gserial.h>
-#include <gimxinput/include/ginput.h>
 #include <gimxpoll/include/gpoll.h>
 #include <gimxtimer/include/gtimer.h>
 #include <gimxtime/include/gtime.h>
