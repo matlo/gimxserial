@@ -9,7 +9,11 @@
 #include <gimxlog/include/glog.h>
 
 #include <stdio.h>
+#ifdef __APPLE__
+#include <IOKit/serial/ioss.h>
+#else
 #include <linux/spi/spidev.h>
+#endif
 #include <sys/select.h>
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -32,19 +36,32 @@ static int tty_set_params(struct gserial_device * device, speed_t baudrate)
     PRINT_ERROR_ERRNO("tcgetattr");
     return -1;
   }
+#ifdef __APPLE__
+  cfsetispeed(&options, B9600);
+  cfsetospeed(&options, B9600);
+#else
   cfsetispeed(&options, baudrate);
   cfsetospeed(&options, baudrate);
+#endif
   cfmakeraw(&options);
   if(tcsetattr(fd, TCSANOW, &options) < 0)
   {
     PRINT_ERROR_ERRNO("tcsetattr");
     return -1;
   }
+#ifdef __APPLE__
+  if (ioctl(fd, IOSSIOSPEED, &baudrate) < 0)
+  {
+    PRINT_ERROR_ERRNO("ioctl IOSSIOSPEED");
+    return -1;
+  }
+#endif
   tcflush(fd, TCIFLUSH);
 
   return 0;
 }
 
+#ifndef __APPLE__
 static int spi_set_params(struct gserial_device * device, unsigned int baudrate)
 {
     int fd = async_get_fd((struct async_device *) device);
@@ -150,6 +167,7 @@ speed_t get_baudrate(unsigned int baudrate) {
     return 0;
   }
 }
+#endif
 
 struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
 
@@ -161,9 +179,17 @@ struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
 
   int ret = 0;
   
-  if(strstr(port, "tty"))
+  if(strstr(port, "tty")
+#ifdef __APPLE__
+     || strncmp(port, "/dev/cu.", 8) == 0
+#endif
+     )
   {
+#ifdef __APPLE__
+    speed_t speed = (speed_t) baudrate;
+#else
     speed_t speed = get_baudrate(baudrate);
+#endif
 
     if(speed) {
       ret = tty_set_params(device, speed);
@@ -177,7 +203,15 @@ struct gserial_device * gserial_open(const char * port, unsigned int baudrate) {
   }
   else if(strstr(port, "spi"))
   {
+#ifdef __APPLE__
+    ret = -1;
+#else
     ret = spi_set_params(device, baudrate);
+#endif
+  }
+  else
+  {
+    ret = -1;
   }
   
   if(ret < 0)
